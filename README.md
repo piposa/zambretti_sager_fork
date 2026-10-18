@@ -1,7 +1,7 @@
 # Zambretti & Sager Weather Forecaster
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.9.93-blue.svg)
+![Version](https://img.shields.io/badge/version-2026.10.1-blue.svg)
 
 This repository is the maintained fork of the original
 `ziffmafiya/zambretti_sager`, whose GitHub repository is no longer available.

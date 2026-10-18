@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026.10.1] — 2026-10-18
+
+### Changed
+- Published the first maintained-fork release based on the restored final upstream 1.9.93 source snapshot.
+- Preserved the fork's existing changes and ported its optional real rain sensor support to the restored architecture.
+- Included native hourly and daily Home Assistant forecasts, the modular forecast engine, diagnostics, and the updated frontend/editor.
+- Included the local dynamic-station patch with the `zambretti_sager.rebase_station` service and documented how to remove it when it is not needed.
+- Updated repository, issue, documentation, and support links to the surviving `piposa/zambretti_sager_fork` repository.
+
 ## [1.9.93] — restored upstream snapshot
 
 ### Changed

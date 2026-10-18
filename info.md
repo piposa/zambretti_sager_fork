@@ -19,8 +19,9 @@ Extended forecasts for **6h, 12h, and 24h** ahead, plus a **precipitation probab
 - Automatic altitude correction for accurate sea-level pressure conversion
 - Supports **20 languages** — UI adapts to your Home Assistant language setting
 
-## What's new in v1.9.93
+## What's new in v2026.10.1
 
+- Restored from the final upstream 1.9.93 source snapshot
 - Modular forecast engine with diagnostics and station rebasing
 - Updated built-in Lovelace card and visual editor
 - Optional rain sensor support from the fork
