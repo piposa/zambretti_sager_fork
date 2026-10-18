@@ -18,6 +18,33 @@ Zambretti & Sager is a Home Assistant custom integration that generates local
 weather forecasts from barometric pressure trends and optional temperature,
 humidity, wind, and precipitation sensors.
 
+### Applied local patch: dynamic station
+
+The fork currently includes the custom dynamic-station patch stored as
+[`zambretti_sager-dynamic-station-1.9.93-20260930.patch`](zambretti_sager-dynamic-station-1.9.93-20260930.patch).
+It adds the `zambretti_sager.rebase_station` service, follows Home Assistant's
+current location and elevation, and prevents pressure readings recorded before
+a station move from being reused after rebasing. The archived patch has SHA-256
+`69fad396b183811023c1d2f15f891b28f28e9ab9e4590750c11649e0c40fca4e`.
+
+For a stationary installation that should keep using the coordinates stored in
+the integration config entry, the patch can be removed from the repository
+root. Check first without changing files:
+
+```bash
+git apply --reverse --check -p1 zambretti_sager-dynamic-station-1.9.93-20260930.patch
+```
+
+If the check succeeds, remove the patch from the source tree with:
+
+```bash
+git apply --reverse -p1 zambretti_sager-dynamic-station-1.9.93-20260930.patch
+```
+
+This removes the rebase service and its persisted history boundary; it does not
+delete the patch file itself. To restore the feature later, apply the same file
+normally with `git apply -p1 zambretti_sager-dynamic-station-1.9.93-20260930.patch`.
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/piposa/zambretti_sager_fork/main/logo.png" alt="Zambretti & Sager Logo" width="400">
 </p>
