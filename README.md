@@ -1,12 +1,25 @@
 # Zambretti & Sager Weather Forecaster
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-1.9.69-blue.svg)
+![Version](https://img.shields.io/badge/version-1.9.93-blue.svg)
 
-A Home Assistant custom integration that provides weather forecasting using the classic Zambretti and Sager algorithms based on barometric pressure trends.
+This repository is the maintained fork of the original
+`ziffmafiya/zambretti_sager`, whose GitHub repository is no longer available.
+The fork preserves its own ten follow-up
+commits and backports the final upstream **1.9.93** component snapshot together
+with the fork's local patches, including real rain-sensor support and extended
+native Home Assistant forecasts.
+
+The original 24 upstream commit objects were no longer available when the
+repository was restored, so this repository contains their final 1.9.93 source
+state rather than a reconstructed commit-by-commit history.
+
+Zambretti & Sager is a Home Assistant custom integration that generates local
+weather forecasts from barometric pressure trends and optional temperature,
+humidity, wind, and precipitation sensors.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ziffmafiya/zambretti_sager/main/logo.png" alt="Zambretti & Sager Logo" width="400">
+  <img src="https://raw.githubusercontent.com/piposa/zambretti_sager_fork/main/logo.png" alt="Zambretti & Sager Logo" width="400">
 </p>
 
 ---
@@ -15,9 +28,9 @@ A Home Assistant custom integration that provides weather forecasting using the 
 
 Click the button below to install directly via HACS:
 
-[![Install with HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ziffmafiya&repository=zambretti_sager&category=integration)
+[![Install with HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=piposa&repository=zambretti_sager_fork&category=integration)
 
-Or open HACS → **Integrations** → **Custom repositories** → add `https://github.com/ziffmafiya/zambretti_sager` (category: Integration).
+Or open HACS → **Integrations** → **Custom repositories** → add `https://github.com/piposa/zambretti_sager_fork` (category: Integration).
 
 After installation, click here to start setup:
 
@@ -29,29 +42,37 @@ After installation, click here to start setup:
 ## Features
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ziffmafiya/zambretti_sager/main/card-screenshot.png" alt="Zambretti Weather Card" width="400">
+  <img src="https://raw.githubusercontent.com/piposa/zambretti_sager_fork/main/card-screenshot.png" alt="Zambretti Weather Card" width="400">
 </p>
 
-The integration includes a built-in **Lovelace card** that displays the current forecast with animated weather icons, night mode, wind info, pressure sparkline, and a 24-hour history chart. It is registered automatically — no manual resource setup needed.
+The integration includes a built-in **Lovelace card** with Modern, Vintage
+Barometer, and Compact Tile layouts. It displays animated weather icons, night
+mode, wind information, 6/12/24-hour forecasts, a forecast trend timeline, and
+a 24-hour pressure/precipitation history chart. The card and its visual editor
+are registered automatically—no manual resource setup is required.
 
 - **Zambretti Forecast** — 32 different weather predictions based on pressure trends over 3 hours
 - **Sager Forecast** — weather prediction based on current pressure and wind direction
-- **Extended Forecasts** — predictions for 6, 12, and 24 hours ahead
+- **Extended Forecast Sensors** — predictions for 6, 12, and 24 hours ahead
+- **Native Weather Entity** — 24 hourly and five daily forecast entries for Home Assistant weather cards
 - **Precipitation Probability** — percentage chance of rain based on pressure trends
-- **Sea Level Pressure Correction** — automatic altitude-based pressure correction for accurate forecasts
-- **Interactive Map Selection** — choose your location on a map for automatic altitude detection
+- **Sea Level Pressure Correction** — altitude- and temperature-aware pressure normalization
+- **Local-First Elevation** — uses the Home Assistant elevation first, with Open-Elevation and Open-Meteo fallbacks
 - **Temperature Compensation** — uses temperature sensor for precise pressure correction
 - **Wind Speed & Direction** — optional wind speed sensor with visualization in the card
+- **Measured Rain** — optional precipitation sensor overrides estimated rainfall while rain is detected
+- **Mobile Station Rebase** — resets location, elevation, and local pressure history through the `zambretti_sager.rebase_station` service
+- **Diagnostics** — Home Assistant config-entry diagnostics with location data redacted
 - **Night Mode** — automatic moon/stars icon and dark theme when sun is down
-- **Pressure Sparkline** — 24-hour pressure history chart inside the card
+- **Pressure History** — recorder-backed rolling history with an in-memory 25-hour buffer
 - **Animated Weather Icons** — drifting clouds, falling snow, waving wind lines
-- **Localization** — 20 languages: English, German, Spanish, French, Italian, Dutch, Polish, Portuguese, Russian, Ukrainian, Chinese (Simplified & Traditional), Japanese, Korean, Czech, Swedish, Danish, Norwegian, Hungarian, Turkish
+- **Localization** — 21 locales, including German and Austrian German
 
 ## Installation
 
 ### ⚡ One-Click HACS Install
 
-[![Install with HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ziffmafiya&repository=zambretti_sager&category=integration)
+[![Install with HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=piposa&repository=zambretti_sager_fork&category=integration)
 
 Then configure:
 
@@ -61,7 +82,7 @@ Then configure:
 
 1. Open HACS → **Integrations**
 2. Click the three dots → **Custom repositories**
-3. Add `https://github.com/ziffmafiya/zambretti_sager` with category **Integration**
+3. Add `https://github.com/piposa/zambretti_sager_fork` with category **Integration**
 4. Click **Install**
 5. Restart Home Assistant
 
@@ -77,15 +98,18 @@ Then configure:
 3. Search for **Zambretti and Sager**
 4. Follow the setup wizard:
    - Select your **pressure sensor** (absolute or sea level pressure)
-   - Select your **wind direction sensor**
+   - (Optional) Select your **wind direction** and **wind speed** sensors
    - (Optional) Select your **temperature sensor** for accurate sea level correction
+   - (Optional) Select your **humidity sensor** to improve precipitation probability
+   - (Optional) Select your **rain sensor** to use measured precipitation
    - Enable **sea level pressure correction** if using an absolute pressure sensor
    - Click on the **map** to select your weather station location
 5. Click **Submit**
 
 ## Sensors
 
-The integration creates six sensors grouped under a single device:
+The integration creates seven sensors and one weather entity, grouped under a
+single device:
 
 | Sensor | Description |
 |---|---|
@@ -95,6 +119,8 @@ The integration creates six sensors grouped under a single device:
 | **Zambretti Forecast 12h** | Prediction for 12 hours ahead |
 | **Zambretti Forecast 24h** | Prediction for 24 hours ahead |
 | **Precipitation Probability** | Chance of rain, 0–100% |
+| **Last Update** | Timestamp of the latest successful coordinator update |
+| **Weather Station** | Current weather plus 24 hourly and five daily forecast entries |
 
 ## How It Works
 
@@ -110,25 +136,29 @@ The result maps to one of 32 classical weather descriptions.
 
 ### Sager Algorithm
 
-Uses current pressure and wind direction:
-
-- **> 1020 hPa** — Fair, No Change
-- **< 1005 hPa** — Unsettled, Rain
-- **1005–1020 hPa** — Variable
+Uses current pressure, the three-hour pressure trend, and the optional wind
+direction. Pressure is divided into fair, changeable, and unsettled zones; the
+trend and wind quadrant then refine the result into one of eleven Sager states.
 
 ### Sea Level Pressure Correction
 
-When enabled, the integration fetches your altitude from Open-Elevation API using the map location, then applies the barometric formula:
+When enabled, the integration first uses the elevation configured in Home
+Assistant. If no local elevation is available, it queries Open-Elevation and
+then Open-Meteo as a fallback, using the selected map location. Results are
+cached in memory. The pressure is normalized with the barometric formula:
 
 ```
 P_sea = P_abs / (1 − (0.0065 × h) / (T + 0.0065 × h + 273.15))^5.257
 ```
 
+For a mobile station, call `zambretti_sager.rebase_station` after relocation.
+This resolves the new elevation and starts a fresh local pressure history.
+
 ## Localization
 
-The setup UI and Lovelace card are available in **20 languages**:
+The setup UI and Lovelace card are available in **21 locales**:
 
-🇬🇧 English · 🇩🇪 Deutsch · 🇪🇸 Español · 🇫🇷 Français · 🇮🇹 Italiano · 🇳🇱 Nederlands · 🇵🇱 Polski · 🇵🇹 Português · 🇷🇺 Русский · 🇺🇦 Українська · 🇨🇳 简体中文 · 🇹🇼 繁體中文 · 🇯🇵 日本語 · 🇰🇷 한국어 · 🇨🇿 Čeština · 🇸🇪 Svenska · 🇩🇰 Dansk · 🇳🇴 Norsk · 🇭🇺 Magyar · 🇹🇷 Türkçe
+🇬🇧 English · 🇩🇪 Deutsch · 🇦🇹 Deutsch (Österreich) · 🇪🇸 Español · 🇫🇷 Français · 🇮🇹 Italiano · 🇳🇱 Nederlands · 🇵🇱 Polski · 🇵🇹 Português · 🇷🇺 Русский · 🇺🇦 Українська · 🇨🇳 简体中文 · 🇹🇼 繁體中文 · 🇯🇵 日本語 · 🇰🇷 한국어 · 🇨🇿 Čeština · 🇸🇪 Svenska · 🇩🇰 Dansk · 🇳🇴 Norsk · 🇭🇺 Magyar · 🇹🇷 Türkçe
 
 To change the language, go to your **HA profile → Language**, or set the card language in the visual editor.
 
@@ -138,6 +168,7 @@ To change the language, go to your **HA profile → Language**, or set the card 
 - A barometric pressure sensor (hPa)
 - A wind direction sensor (degrees, optional but recommended for Sager)
 - A temperature sensor (optional, for sea level correction)
+- A precipitation sensor (optional, for measured rain)
 
 ## Troubleshooting
 
@@ -148,13 +179,16 @@ Wait a few minutes — the integration needs pressure history to calculate trend
 Enable sea level correction if you're above sea level, verify the map location, and make sure the temperature sensor is working.
 
 **Altitude not detected**
-The integration uses the [Open-Elevation API](https://open-elevation.com). Check that your Home Assistant instance has internet access. Altitude is fetched once at startup.
+Set the elevation in Home Assistant under **Settings → System → General**. If
+it is not configured there, make sure Home Assistant can reach Open-Elevation
+or Open-Meteo and that the selected coordinates are correct.
 
 ## Credits
 
 - **Zambretti Algorithm** — developed by Negretti and Zambra in the early 1900s
 - **Sager Algorithm** — developed by meteorologist Raymond Sager
 - **Integration Author** — Maksym ([@ziffmafiya](https://github.com/ziffmafiya))
+- **Fork and 1.9.93 restoration** — [@piposa](https://github.com/piposa)
 
 ## License
 
@@ -162,4 +196,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Support
 
-Found a bug or have a suggestion? [Open an issue](https://github.com/ziffmafiya/zambretti_sager/issues) on GitHub.
+Found a bug or have a suggestion? [Open an issue](https://github.com/piposa/zambretti_sager_fork/issues) on GitHub.

@@ -19,4 +19,4 @@
 
 ---
 
-[GitHub](https://github.com/ziffmafiya/zambretti_sager) · [Issues](https://github.com/ziffmafiya/zambretti_sager/issues)
+[GitHub](https://github.com/piposa/zambretti_sager_fork) · [Issues](https://github.com/piposa/zambretti_sager_fork/issues)

@@ -1,0 +1,3 @@
+rebase_station:
+  name: Womo-Station neu referenzieren
+  description: Aktualisiert die Hoehe aus dem aktuellen HA-Standort und beginnt eine neue lokale Druckhistorie.

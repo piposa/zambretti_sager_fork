@@ -37,3 +37,6 @@ home-assistant_v2.db
 .DS_Store
 Thumbs.db
 optimize_icon.py
+
+# Local reference snapshot (not part of the integration package)
+ziffmafiaya_latest/

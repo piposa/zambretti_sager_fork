@@ -4,7 +4,7 @@
 # 2. Create the first page via GitHub (can be empty)
 
 $ErrorActionPreference = "Stop"
-$Repo = "ziffmafiya/zambretti_sager"
+$Repo = "piposa/zambretti_sager_fork"
 $WikiDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TempDir = Join-Path $env:TEMP "zambretti_sager_wiki_$(Get-Random)"
 

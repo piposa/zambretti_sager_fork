@@ -4,9 +4,9 @@
   "codeowners": ["@ziffmafiya"],
   "config_flow": true,
   "dependencies": ["recorder", "frontend", "http", "lovelace"],
-  "documentation": "https://github.com/ziffmafiya/zambretti_sager",
+  "documentation": "https://github.com/piposa/zambretti_sager_fork",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/ziffmafiya/zambretti_sager/issues",
+  "issue_tracker": "https://github.com/piposa/zambretti_sager_fork/issues",
   "requirements": [],
-  "version": "2026.7.3"
+  "version": "1.9.93"
 }

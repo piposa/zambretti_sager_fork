@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.93] — restored upstream snapshot
+
+### Changed
+- Restored the final upstream 1.9.93 component snapshot, including the modular forecast engine, diagnostics, station rebasing, updated frontend/editor, and translations.
+- Ported the fork's optional real rain sensor support to the 1.9.93 architecture.
+- Updated repository and support links to the surviving fork.
+
 ## [1.9.69] — 2026-07-06
 
 ### Fixed

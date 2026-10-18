@@ -1,4 +1,5 @@
 """JavaScript module registration for Zambretti & Sager card."""
+
 # Tested against HA 2026.x where hass.data uses LOVELACE_DATA key
 # and LovelaceData has resource_mode (not mode) attribute.
 from __future__ import annotations
@@ -21,30 +22,31 @@ _LOVELACE_DATA_KEY = "lovelace"
 # Constant introduced in HA 2025/2026 — import defensively
 try:
     from homeassistant.components.lovelace.const import LOVELACE_DATA
+
     _LOVELACE_DATA_KEY = LOVELACE_DATA
 except ImportError:
     _LOVELACE_DATA_KEY = "lovelace"
 
 
 def _get_lovelace(hass: HomeAssistant) -> Any | None:
-    """Get LovelaceData object from hass.data — supports old and new key."""
+    """Получить объект LovelaceData из hass.data — поддерживает старый и новый ключ."""
     data = hass.data.get(_LOVELACE_DATA_KEY)
     if data is None:
-        # Fallback: old "lovelace" key
+        # Fallback: старый ключ "lovelace"
         data = hass.data.get("lovelace")
     return data
 
 
 def _get_resource_mode(lovelace: Any) -> str:
-    """Safely get the resources mode.
+    """Получить режим ресурсов безопасно.
 
-    In HA 2026: LovelaceData.resource_mode
-    In older HA: lovelace.mode or lovelace.resource_mode
+    В HA 2026: LovelaceData.resource_mode
+    В старых HA: lovelace.mode или lovelace.resource_mode
     """
-    # New attribute (HA 2026+)
+    # Новый атрибут (HA 2026+)
     if hasattr(lovelace, "resource_mode"):
         return lovelace.resource_mode
-    # Old attribute
+    # Старый атрибут
     if hasattr(lovelace, "mode"):
         return lovelace.mode
     return "yaml"
@@ -122,32 +124,34 @@ class JSModuleRegistration:
         _LOGGER.debug("Installing Zambretti javascript modules")
 
         existing = [
-            r for r in self.lovelace.resources.async_items()
-            if r["url"].startswith(URL_BASE)
+            r for r in self.lovelace.resources.async_items() if r["url"].startswith(URL_BASE)
         ]
 
         for module in JSMODULES:
             url = f"{URL_BASE}/{module['filename']}"
-            registered = False
+            expected_url = f"{url}?v={module['version']}"
+            matching = [r for r in existing if self._get_path(r["url"]) == url]
 
-            for resource in existing:
-                if self._get_path(resource["url"]) == url:
-                    registered = True
-                    if self._get_version(resource["url"]) != module["version"]:
-                        _LOGGER.info("Updating %s to v%s", module["name"], module["version"])
-                        await self.lovelace.resources.async_update_item(
-                            resource["id"],
-                            {"res_type": "module", "url": f"{url}?v={module['version']}"},
-                        )
-                    else:
-                        _LOGGER.debug("%s already up to date (v%s)", module["name"], module["version"])
-                    break
-
-            if not registered:
+            if not matching:
                 _LOGGER.info("Registering %s v%s", module["name"], module["version"])
                 await self.lovelace.resources.async_create_item(
-                    {"res_type": "module", "url": f"{url}?v={module['version']}"}
+                    {"res_type": "module", "url": expected_url}
                 )
+            else:
+                primary = matching[0]
+                if primary["url"] != expected_url:
+                    _LOGGER.info("Updating %s to v%s", module["name"], module["version"])
+                    await self.lovelace.resources.async_update_item(
+                        primary["id"],
+                        {"res_type": "module", "url": expected_url},
+                    )
+                else:
+                    _LOGGER.debug("%s already up to date (v%s)", module["name"], module["version"])
+
+                # Remove any duplicate Lovelace resource entries
+                for dup in matching[1:]:
+                    _LOGGER.info("Removing duplicate Lovelace resource: %s", dup["url"])
+                    await self.lovelace.resources.async_delete_item(dup["id"])
 
     def _get_path(self, url: str) -> str:
         return url.split("?")[0]
@@ -165,8 +169,7 @@ class JSModuleRegistration:
         for module in JSMODULES:
             url = f"{URL_BASE}/{module['filename']}"
             to_remove = [
-                r for r in self.lovelace.resources.async_items()
-                if r["url"].startswith(url)
+                r for r in self.lovelace.resources.async_items() if r["url"].startswith(url)
             ]
             for resource in to_remove:
                 await self.lovelace.resources.async_delete_item(resource["id"])

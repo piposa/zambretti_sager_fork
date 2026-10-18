@@ -15,6 +15,7 @@ The integration is configured through a **Config Flow** — the setup wizard in 
 | **Wind speed sensor** | ❌ | Wind speed. Used in the card and sensor attributes |
 | **Temperature sensor** | ❌ | Temperature for accurate sea level pressure correction |
 | **Humidity sensor** | ❌ | Humidity for precipitation probability calculation |
+| **Rain sensor** | ❌ | Measured precipitation amount; raises probability while rain is detected |
 | **Location (map)** | ✅ | Weather station coordinates — used for altitude detection |
 | **Sea level correction** | ❌ | Enable if your pressure sensor measures absolute (station) pressure |
 
@@ -53,7 +54,7 @@ You can add multiple integration instances for different weather stations. Each 
 
 You can change:
 
-- Sensors (pressure, wind, temperature, humidity)
+- Sensors (pressure, wind, temperature, humidity, rain)
 - Map coordinates
 - Sea level correction toggle
 

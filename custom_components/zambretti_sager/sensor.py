@@ -1,56 +1,48 @@
+"""Sensor platform for the Zambretti & Sager integration."""
+
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
-from homeassistant.const import PERCENTAGE
+from datetime import datetime
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
+from homeassistant.const import PERCENTAGE, EntityCategory
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (
-    DOMAIN,
-    VERSION,
-    ZAMBRETTI_MAPPING,
-    calculate_sager_forecast,
-    classify_pressure_trend,
-    wind_degrees_to_compass,
-)
-from .coordinator import ForecastData, ZambrettiSagerCoordinator
+from .const import DOMAIN, VERSION
+from .coordinator import ForecastData, ZambrettiConfigEntry, ZambrettiSagerCoordinator
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    """Set up sensors."""
-    coordinator: ZambrettiSagerCoordinator = hass.data[DOMAIN][entry.entry_id]
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ZambrettiConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the Zambretti & Sager sensors."""
+    coordinator = entry.runtime_data
 
-    async_add_entities([
-        ZambrettiSensor(coordinator),
-        SagerSensor(coordinator),
-        ZambrettiForecast6h(coordinator),
-        ZambrettiForecast12h(coordinator),
-        ZambrettiForecast24h(coordinator),
-        PrecipitationProbability(coordinator),
-    ])
-
-
-def _trend_label(delta: float) -> str:
-    """Text trend for attributes."""
-    trend = classify_pressure_trend(delta)
-    return {
-        "rising_rapidly": "↑↑ Rising Fast",
-        "rising_slowly":  "↑ Rising",
-        "steady":         "→ Steady",
-        "falling_slowly": "↓ Falling",
-        "falling_rapidly":"↓↓ Falling Fast",
-    }.get(trend, "→ Steady")
+    async_add_entities(
+        [
+            ZambrettiSensor(coordinator),
+            SagerSensor(coordinator),
+            ZambrettiForecast6h(coordinator),
+            ZambrettiForecast12h(coordinator),
+            ZambrettiForecast24h(coordinator),
+            PrecipitationProbability(coordinator),
+            LastUpdateSensor(coordinator),
+        ]
+    )
 
 
-class WeatherSensorBase(CoordinatorEntity, SensorEntity):
-    """Base class for forecast sensors."""
+class WeatherSensorBase(CoordinatorEntity[ZambrettiSagerCoordinator], SensorEntity):
+    """Base class for all forecast sensors."""
 
-    # Force HA to write a recorder entry every coordinator update cycle
-    # (every 5 min) even when state hasn't changed. This gives the Lovelace
-    # history chart and trend timeline dense data to work with.
-    _attr_force_update = True
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the sensor and set shared device info."""
         super().__init__(coordinator)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, coordinator.entry.entry_id)},
@@ -59,278 +51,233 @@ class WeatherSensorBase(CoordinatorEntity, SensorEntity):
             model="Software Forecaster",
             sw_version=VERSION,
         )
-        self._attr_has_entity_name = True
 
     @property
     def data(self) -> ForecastData | None:
+        """Return the latest forecast data snapshot from the coordinator."""
         return self.coordinator.data
 
     @property
     def available(self) -> bool:
+        """Return True when the coordinator has valid data."""
         d = self.data
         return d is not None and d.available
 
-    @staticmethod
-    def _zambretti_index(p_now: float, delta: float) -> int:
-        """Calculate Zambretti index (1–32)."""
-        if delta <= -1.6:
-            z = round(127 - 0.12 * p_now)
-        elif delta >= 1.6:
-            z = round(185 - 0.16 * p_now)
-        else:
-            z = round(144 - 0.13 * p_now)
-        return max(1, min(z, 32))
-
-    def _base_attrs(self, delta: float) -> dict:
+    def _base_attrs(self) -> dict:
         """Common attributes for all forecast sensors."""
         d = self.data
-        attrs: dict = {}
-        if d and d.p_now is not None:
-            attrs["pressure_hpa"] = round(d.p_now, 1)
-            attrs["pressure_delta_3h"] = round(d.p_now - d.p_history.get(3, d.p_now), 2) if 3 in d.p_history else None
-            attrs["trend"] = _trend_label(delta)
-        if d and d.altitude is not None:
-            attrs["altitude_m"] = round(d.altitude, 1)
-        if d and d.humidity is not None:
-            attrs["humidity_%"] = round(d.humidity, 1)
-        if d and d.wind_degrees is not None:
-            attrs["wind_direction"] = wind_degrees_to_compass(d.wind_degrees)
-            attrs["wind_degrees"] = round(d.wind_degrees, 1)
-        if d and d.wind_speed is not None:
-            attrs["wind_speed"] = round(d.wind_speed, 1)
-        if d and d.is_night:
+        if not d or d.p_now is None:
+            return {}
+        attrs: dict = {
+            "pressure_hpa": d.p_now,
+            "pressure_3h_ago": d.p_3h,
+            "pressure_delta_3h": d.delta_3h,
+            "trend": d.trend_label,
+        }
+        if d.altitude is not None:
+            attrs["altitude_m"] = d.altitude
+        if d.humidity is not None:
+            attrs["humidity_%"] = d.humidity
+        if d.rain_amount is not None:
+            attrs["rain_amount"] = d.rain_amount
+        if d.wind_degrees is not None:
+            attrs["wind_direction"] = d.wind_direction
+            attrs["wind_degrees"] = d.wind_degrees
+        if d.wind_speed is not None:
+            attrs["wind_speed"] = d.wind_speed
+        if d.is_night:
             attrs["is_night"] = d.is_night
         return attrs
+
+
 class ZambrettiSensor(WeatherSensorBase):
-    """Current Zambretti forecast based on 3-hour trend."""
+    """Current Zambretti forecast sensor based on the 3-hour pressure trend."""
+
+    _attr_translation_key = "zambretti_forecast"
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the Zambretti forecast sensor."""
         super().__init__(coordinator)
-        self._attr_name = "Zambretti Forecast"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti"
 
     @property
     def native_value(self) -> str | None:
+        """Return the current Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
-        p_3h = d.p_history.get(3, d.p_now)
-        delta = d.p_now - p_3h
-        return ZAMBRETTI_MAPPING.get(self._zambretti_index(d.p_now, delta), "stable")
+        return d.zambretti_state
 
     @property
     def extra_state_attributes(self) -> dict:
-        d = self.data
-        if not d or d.p_now is None:
-            return {}
-        p_3h = d.p_history.get(3, d.p_now)
-        delta = d.p_now - p_3h
-        attrs = self._base_attrs(delta)
-        # Expose the raw pressure sensor entity_id so the Lovelace card
-        # can fetch its history directly (much denser than Zambretti state changes)
+        """Return extra attributes including the source pressure sensor id."""
+        attrs = self._base_attrs()
         attrs["pressure_sensor"] = self.coordinator.pressure_id
         return attrs
 
 
 class SagerSensor(WeatherSensorBase):
-    """Sager forecast based on pressure, trend, and wind direction."""
+    """Sager forecast sensor based on pressure, trend, and wind direction."""
+
+    _attr_translation_key = "sager_forecast"
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the Sager forecast sensor."""
         super().__init__(coordinator)
-        self._attr_name = "Sager Forecast"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_sager"
 
     @property
     def native_value(self) -> str | None:
+        """Return the current Sager forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
-        p_3h = d.p_history.get(3, d.p_now)
-        delta = d.p_now - p_3h
-        return calculate_sager_forecast(d.p_now, delta, d.wind_degrees)
+        return d.sager_state
 
     @property
     def extra_state_attributes(self) -> dict:
-        d = self.data
-        if not d or d.p_now is None:
-            return {}
-        p_3h = d.p_history.get(3, d.p_now)
-        delta = d.p_now - p_3h
-        return self._base_attrs(delta)
+        """Return extra attributes for the Sager forecast."""
+        return self._base_attrs()
 
 
 class ZambrettiForecast6h(WeatherSensorBase):
-    """6h forecast: 3h trend × 2."""
+    """Zambretti forecast sensor for 6 hours ahead (3-hour trend extrapolated ×2)."""
+
+    _attr_translation_key = "zambretti_forecast_6h"
+    _attr_icon = "mdi:weather-partly-cloudy"
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the 6-hour Zambretti forecast sensor."""
         super().__init__(coordinator)
-        self._attr_name = "Zambretti Forecast 6h"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti_6h"
-        self._attr_icon = "mdi:weather-partly-cloudy"
 
     @property
     def native_value(self) -> str | None:
+        """Return the 6-hour Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
-        p_3h = d.p_history.get(3, d.p_now)
-        delta_6h = (d.p_now - p_3h) * 2
-        predicted = d.p_now + delta_6h
-        return ZAMBRETTI_MAPPING.get(self._zambretti_index(predicted, delta_6h), "stable")
+        return d.zambretti_6h
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including predicted pressure for 6 hours ahead."""
+        attrs = self._base_attrs()
         d = self.data
-        if not d or d.p_now is None:
-            return {}
-        p_3h = d.p_history.get(3, d.p_now)
-        delta_6h = (d.p_now - p_3h) * 2
-        attrs = self._base_attrs(delta_6h)
-        attrs["predicted_pressure_hpa"] = round(d.p_now + delta_6h, 1)
+        if d and d.predicted_p_6h is not None:
+            attrs["predicted_pressure_hpa"] = d.predicted_p_6h
         return attrs
 
 
 class ZambrettiForecast12h(WeatherSensorBase):
-    """12h forecast: 6h trend × 2."""
+    """Zambretti forecast sensor for 12 hours ahead (6-hour trend extrapolated ×2)."""
+
+    _attr_translation_key = "zambretti_forecast_12h"
+    _attr_icon = "mdi:weather-cloudy"
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the 12-hour Zambretti forecast sensor."""
         super().__init__(coordinator)
-        self._attr_name = "Zambretti Forecast 12h"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti_12h"
-        self._attr_icon = "mdi:weather-cloudy"
 
     @property
     def native_value(self) -> str | None:
+        """Return the 12-hour Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
-        for h in (6, 3, 1):
-            if h in d.p_history:
-                p_ref = d.p_history[h]
-                hours = h
-                break
-        else:
-            p_ref = d.p_now
-            hours = 1
-        delta_12h = (d.p_now - p_ref) / hours * 12
-        predicted = d.p_now + delta_12h
-        return ZAMBRETTI_MAPPING.get(self._zambretti_index(predicted, delta_12h), "stable")
+        return d.zambretti_12h
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including predicted pressure for 12 hours ahead."""
+        attrs = self._base_attrs()
         d = self.data
-        if not d or d.p_now is None:
-            return {}
-        for h in (6, 3, 1):
-            if h in d.p_history:
-                p_ref = d.p_history[h]
-                hours = h
-                break
-        else:
-            p_ref = d.p_now
-            hours = 1
-        delta_12h = (d.p_now - p_ref) / hours * 12
-        attrs = self._base_attrs(delta_12h)
-        attrs["predicted_pressure_hpa"] = round(d.p_now + delta_12h, 1)
+        if d and d.predicted_p_12h is not None:
+            attrs["predicted_pressure_hpa"] = d.predicted_p_12h
         return attrs
 
 
 class ZambrettiForecast24h(WeatherSensorBase):
-    """24h forecast: 12h trend × 2."""
+    """Zambretti forecast sensor for 24 hours ahead (12-hour trend extrapolated ×2)."""
+
+    _attr_translation_key = "zambretti_forecast_24h"
+    _attr_icon = "mdi:weather-sunset"
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the 24-hour Zambretti forecast sensor."""
         super().__init__(coordinator)
-        self._attr_name = "Zambretti Forecast 24h"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_zambretti_24h"
-        self._attr_icon = "mdi:weather-sunset"
 
     @property
     def native_value(self) -> str | None:
+        """Return the 24-hour Zambretti forecast translation key."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
-        for h in (12, 6, 3, 1):
-            if h in d.p_history:
-                p_ref = d.p_history[h]
-                hours = h
-                break
-        else:
-            p_ref = d.p_now
-            hours = 1
-        delta_24h = (d.p_now - p_ref) / hours * 24
-        predicted = d.p_now + delta_24h
-        return ZAMBRETTI_MAPPING.get(self._zambretti_index(predicted, delta_24h), "stable")
+        return d.zambretti_24h
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes including predicted pressure for 24 hours ahead."""
+        attrs = self._base_attrs()
         d = self.data
-        if not d or d.p_now is None:
-            return {}
-        for h in (12, 6, 3, 1):
-            if h in d.p_history:
-                p_ref = d.p_history[h]
-                hours = h
-                break
-        else:
-            p_ref = d.p_now
-            hours = 1
-        delta_24h = (d.p_now - p_ref) / hours * 24
-        attrs = self._base_attrs(delta_24h)
-        attrs["predicted_pressure_hpa"] = round(d.p_now + delta_24h, 1)
+        if d and d.predicted_p_24h is not None:
+            attrs["predicted_pressure_hpa"] = d.predicted_p_24h
         return attrs
 
 
 class PrecipitationProbability(WeatherSensorBase):
-    """Precipitation probability based on pressure, trend, and humidity."""
+    """Sensor for precipitation probability based on pressure, trend, and humidity."""
+
+    _attr_translation_key = "precipitation_probability"
+    _attr_icon = "mdi:water-percent"
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the precipitation probability sensor."""
         super().__init__(coordinator)
-        self._attr_name = "Precipitation Probability"
         self._attr_unique_id = f"{coordinator.entry.entry_id}_precipitation_probability"
-        self._attr_icon = "mdi:water-percent"
-        self._attr_native_unit_of_measurement = PERCENTAGE
-        self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> int | None:
+        """Return precipitation probability as an integer percentage (0–100)."""
         d = self.data
         if not d or not d.available or d.p_now is None:
             return None
-
-        p_3h = d.p_history.get(3, d.p_now)
-        delta = d.p_now - p_3h
-        p_now = d.p_now
-
-        if p_now < 1000:       base_prob = 90
-        elif p_now < 1005:     base_prob = 70
-        elif p_now < 1010:     base_prob = 50
-        elif p_now < 1015:     base_prob = 30
-        elif p_now < 1020:     base_prob = 15
-        else:                  base_prob = 5
-
-        if delta < -3.0:       trend_modifier = 30
-        elif delta < -1.6:     trend_modifier = 15
-        elif delta > 3.0:      trend_modifier = -30
-        elif delta > 1.6:      trend_modifier = -15
-        else:                  trend_modifier = 0
-
-        # Humidity: high humidity increases the probability of precipitation
-        humidity_modifier = 0
-        if d.humidity is not None:
-            if d.humidity >= 90:    humidity_modifier = 15
-            elif d.humidity >= 80:  humidity_modifier = 10
-            elif d.humidity >= 70:  humidity_modifier = 5
-            elif d.humidity <= 30:  humidity_modifier = -15
-            elif d.humidity <= 40:  humidity_modifier = -10
-
-        return round(max(0, min(100, base_prob + trend_modifier + humidity_modifier)))
+        return d.precip_probability
 
     @property
     def extra_state_attributes(self) -> dict:
+        """Return extra attributes for the precipitation probability sensor."""
+        return self._base_attrs()
+
+
+class LastUpdateSensor(WeatherSensorBase):
+    """Sensor showing the timestamp of the last successful update."""
+
+    _attr_translation_key = "last_update"
+    _attr_icon = "mdi:clock-time-four"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_force_update = True
+
+    def __init__(self, coordinator: ZambrettiSagerCoordinator) -> None:
+        """Initialize the last update sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.entry.entry_id}_last_update"
+
+    @property
+    def available(self) -> bool:
+        """Return True when a last-update timestamp exists."""
         d = self.data
-        if not d or d.p_now is None:
-            return {}
-        p_3h = d.p_history.get(3, d.p_now)
-        delta = d.p_now - p_3h
-        attrs = self._base_attrs(delta)
-        return attrs
+        return d is not None and d.last_updated is not None
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the UTC timestamp of the last successful coordinator update."""
+        d = self.data
+        if d is None:
+            return None
+        return d.last_updated
