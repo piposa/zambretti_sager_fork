@@ -19,6 +19,7 @@ from .const import (
     CONF_LATITUDE,
     CONF_LONGITUDE,
     CONF_PRESSURE_SENSOR,
+    CONF_RAIN_DETECTION_SENSOR,
     CONF_RAIN_SENSOR,
     CONF_TEMPERATURE_SENSOR,
     CONF_USE_SEA_LEVEL,
@@ -43,6 +44,23 @@ _LOGGER = logging.getLogger(__name__)
 
 UPDATE_INTERVAL = datetime.timedelta(minutes=5)
 HISTORY_HOURS = (3, 6, 12)
+
+RAINING_STATES = frozenset({"on", "true", "yes", "wet", "rain", "raining", "detected"})
+DRY_STATES = frozenset({"off", "false", "no", "dry", "none", "clear", "not_raining"})
+
+
+def _parse_rain_detection_state(value: str) -> bool | None:
+    """Convert common sensor and binary-sensor states to a rain flag."""
+    normalized = value.strip().lower()
+    if normalized in RAINING_STATES:
+        return True
+    if normalized in DRY_STATES:
+        return False
+    try:
+        return float(normalized) > 0
+    except (ValueError, TypeError):
+        return None
+
 
 type ZambrettiConfigEntry = ConfigEntry["ZambrettiSagerCoordinator"]
 
@@ -136,6 +154,9 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
             CONF_HUMIDITY_SENSOR
         )
         self.rain_id = entry.options.get(CONF_RAIN_SENSOR) or entry.data.get(CONF_RAIN_SENSOR)
+        self.rain_detection_id = entry.options.get(CONF_RAIN_DETECTION_SENSOR) or entry.data.get(
+            CONF_RAIN_DETECTION_SENSOR
+        )
         self.use_sea_level = (
             entry.options.get(CONF_USE_SEA_LEVEL)
             if CONF_USE_SEA_LEVEL in entry.options
@@ -219,6 +240,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
         wind_speed = self._get_wind_speed()
         humidity = self._get_humidity()
         rain_amount = self._get_rain_amount()
+        is_raining = self._get_is_raining()
         is_night = self._is_nighttime()
 
         # Historical pressures (already sea-level corrected via buffer or batch query)
@@ -235,6 +257,7 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
             wind_speed=wind_speed,
             humidity=humidity,
             rain_amount=rain_amount,
+            is_raining=is_raining,
             temperature=temperature,
             altitude=self.altitude,
             is_night=is_night,
@@ -429,6 +452,16 @@ class ZambrettiSagerCoordinator(DataUpdateCoordinator[ForecastData]):
             return float(state.state)
         except (ValueError, TypeError):
             return None
+
+    def _get_is_raining(self) -> bool | None:
+        """Return whether the configured detection entity currently reports rain."""
+        if not self.rain_detection_id:
+            return None
+        state = self.hass.states.get(self.rain_detection_id)
+        if not state or state.state in ("unknown", "unavailable"):
+            return None
+
+        return _parse_rain_detection_state(state.state)
 
     async def _fetch_history_pressures(
         self, now: datetime.datetime | None = None

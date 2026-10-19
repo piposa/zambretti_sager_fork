@@ -10,7 +10,8 @@
           "wind_speed_sensor": "Wind Speed Sensor (optional)",
           "temperature_sensor": "Temperature Sensor (optional)",
           "humidity_sensor": "Humidity Sensor (optional)",
-          "rain_sensor": "Rain Sensor (optional)",
+          "rain_detection_sensor": "Rain Detection Sensor (optional)",
+          "rain_sensor": "Rain Amount Sensor (optional)",
           "use_sea_level_correction": "Enable Sea Level Pressure Correction",
           "location": "Location"
         },
@@ -20,6 +21,7 @@
           "wind_speed_sensor": "Optional: dedicated wind speed sensor",
           "temperature_sensor": "Optional: used for accurate sea level pressure correction",
           "humidity_sensor": "Optional: improves precipitation probability accuracy",
+          "rain_detection_sensor": "Optional: entity reporting current rain as raining/none, on/off, or 0/1",
           "rain_sensor": "Optional: measured precipitation amount",
           "use_sea_level_correction": "Enable if using an absolute pressure sensor and located above sea level",
           "location": "Click on the map to select your weather station location for altitude calculation"
@@ -34,7 +36,8 @@
           "wind_speed_sensor": "Wind Speed Sensor (optional)",
           "temperature_sensor": "Temperature Sensor (optional)",
           "humidity_sensor": "Humidity Sensor (optional)",
-          "rain_sensor": "Rain Sensor (optional)",
+          "rain_detection_sensor": "Rain Detection Sensor (optional)",
+          "rain_sensor": "Rain Amount Sensor (optional)",
           "use_sea_level_correction": "Enable Sea Level Pressure Correction",
           "location": "Location"
         },
@@ -44,6 +47,7 @@
           "wind_speed_sensor": "Optional: dedicated wind speed sensor",
           "temperature_sensor": "Optional: used for accurate sea level pressure correction",
           "humidity_sensor": "Optional: improves precipitation probability accuracy",
+          "rain_detection_sensor": "Optional: entity reporting current rain as raining/none, on/off, or 0/1",
           "rain_sensor": "Optional: measured precipitation amount",
           "use_sea_level_correction": "Enable if using an absolute pressure sensor and located above sea level",
           "location": "Click on the map to select your weather station location for altitude calculation"
@@ -70,7 +74,8 @@
           "wind_speed_sensor": "Wind Speed Sensor (optional)",
           "temperature_sensor": "Temperature Sensor (optional)",
           "humidity_sensor": "Humidity Sensor (optional)",
-          "rain_sensor": "Rain Sensor (optional)",
+          "rain_detection_sensor": "Rain Detection Sensor (optional)",
+          "rain_sensor": "Rain Amount Sensor (optional)",
           "use_sea_level_correction": "Enable Sea Level Pressure Correction",
           "location": "Location"
         },
@@ -80,6 +85,7 @@
           "wind_speed_sensor": "Optional: dedicated wind speed sensor",
           "temperature_sensor": "Optional: used for accurate sea level pressure correction",
           "humidity_sensor": "Optional: improves precipitation probability accuracy",
+          "rain_detection_sensor": "Optional: entity reporting current rain as raining/none, on/off, or 0/1",
           "rain_sensor": "Optional: measured precipitation amount",
           "use_sea_level_correction": "Enable if using an absolute pressure sensor and located above sea level",
           "location": "Click on the map to select your weather station location for altitude calculation"

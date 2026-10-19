@@ -110,6 +110,8 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
         d = self.data
         if not d or not d.available:
             return None
+        if d.is_raining is True:
+            return "rainy"
         state = d.sager_state if d.wind_degrees is not None else d.zambretti_state
         condition = ZAMBRETTI_TO_CONDITION.get(state) if state else None
         return "clear-night" if d.is_night and condition == "sunny" else condition
@@ -191,7 +193,7 @@ class ZambrettiWeather(CoordinatorEntity, WeatherEntity):
         probability = calculate_precipitation_probability(
             predicted_pressure, trend_delta_3h, d.humidity
         )
-        if d.rain_amount is not None and d.rain_amount > 0:
+        if d.is_raining is True or (d.rain_amount is not None and d.rain_amount > 0):
             probability = max(probability, 90)
 
         return Forecast(

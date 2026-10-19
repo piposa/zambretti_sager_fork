@@ -80,6 +80,8 @@ class WeatherSensorBase(CoordinatorEntity[ZambrettiSagerCoordinator], SensorEnti
             attrs["humidity_%"] = d.humidity
         if d.rain_amount is not None:
             attrs["rain_amount"] = d.rain_amount
+        if d.is_raining is not None:
+            attrs["is_raining"] = d.is_raining
         if d.wind_degrees is not None:
             attrs["wind_direction"] = d.wind_direction
             attrs["wind_degrees"] = d.wind_degrees

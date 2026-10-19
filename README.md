@@ -87,7 +87,8 @@ are registered automatically—no manual resource setup is required.
 - **Local-First Elevation** — uses the Home Assistant elevation first, with Open-Elevation and Open-Meteo fallbacks
 - **Temperature Compensation** — uses temperature sensor for precise pressure correction
 - **Wind Speed & Direction** — optional wind speed sensor with visualization in the card
-- **Measured Rain** — optional precipitation sensor overrides estimated rainfall while rain is detected
+- **Rain Detection** — optional sensor or binary sensor (`raining`/`none`, `on`/`off`, or `0`/`1`) confirms current rain and raises precipitation probability
+- **Measured Rain** — optional precipitation-amount sensor supplies a measured amount independently of rain detection
 - **Mobile Station Rebase** — resets location, elevation, and local pressure history through the `zambretti_sager.rebase_station` service
 - **Diagnostics** — Home Assistant config-entry diagnostics with location data redacted
 - **Night Mode** — automatic moon/stars icon and dark theme when sun is down
@@ -128,7 +129,8 @@ Then configure:
    - (Optional) Select your **wind direction** and **wind speed** sensors
    - (Optional) Select your **temperature sensor** for accurate sea level correction
    - (Optional) Select your **humidity sensor** to improve precipitation probability
-   - (Optional) Select your **rain sensor** to use measured precipitation
+   - (Optional) Select a **rain detection sensor** to confirm whether it is currently raining
+   - (Optional) Select a **rain amount sensor** to use measured precipitation
    - Enable **sea level pressure correction** if using an absolute pressure sensor
    - Click on the **map** to select your weather station location
 5. Click **Submit**
@@ -195,7 +197,8 @@ To change the language, go to your **HA profile → Language**, or set the card 
 - A barometric pressure sensor (hPa)
 - A wind direction sensor (degrees, optional but recommended for Sager)
 - A temperature sensor (optional, for sea level correction)
-- A precipitation sensor (optional, for measured rain)
+- A rain detection sensor or binary sensor (optional, for current rain detection)
+- A precipitation-amount sensor (optional, for measured rain)
 
 ## Troubleshooting
 

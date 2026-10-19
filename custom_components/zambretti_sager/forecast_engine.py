@@ -30,6 +30,7 @@ class ForecastData:
     wind_speed: float | None = None  # Wind speed (m/s)
     humidity: float | None = None  # Relative humidity (%)
     rain_amount: float | None = None  # Measured precipitation amount
+    is_raining: bool | None = None  # Current rain detection state
     altitude: float | None = None  # Station altitude (meters)
     temperature: float = 15.0  # Current temperature (°C)
     is_night: bool = False  # True if sun is below horizon
@@ -61,6 +62,7 @@ class WeatherObservations:
     wind_speed: float | None = None
     humidity: float | None = None
     rain_amount: float | None = None
+    is_raining: bool | None = None
     temperature: float = 15.0
     altitude: float | None = None
     is_night: bool = False
@@ -84,7 +86,7 @@ class ForecastEngine:
 
         extrapolations = calculate_extrapolations(obs.p_now, obs.p_3h, obs.p_6h, obs.p_12h)
         precip_prob = calculate_precipitation_probability(obs.p_now, delta_3h, obs.humidity)
-        if obs.rain_amount is not None and obs.rain_amount > 0:
+        if obs.is_raining is True or (obs.rain_amount is not None and obs.rain_amount > 0):
             precip_prob = max(precip_prob, 90)
 
         f6 = extrapolations[6]
@@ -102,6 +104,7 @@ class ForecastEngine:
             wind_speed=round(obs.wind_speed, 1) if obs.wind_speed is not None else None,
             humidity=round(obs.humidity, 1) if obs.humidity is not None else None,
             rain_amount=round(obs.rain_amount, 2) if obs.rain_amount is not None else None,
+            is_raining=obs.is_raining,
             altitude=round(obs.altitude, 1) if obs.altitude is not None else None,
             temperature=round(obs.temperature, 1),
             is_night=obs.is_night,

@@ -44,6 +44,7 @@ CONF_WIND_SPEED_SENSOR: Final[str] = "wind_speed_sensor"
 CONF_TEMPERATURE_SENSOR: Final[str] = "temperature_sensor"
 CONF_HUMIDITY_SENSOR: Final[str] = "humidity_sensor"
 CONF_RAIN_SENSOR: Final[str] = "rain_sensor"
+CONF_RAIN_DETECTION_SENSOR: Final[str] = "rain_detection_sensor"
 CONF_LATITUDE: Final[str] = "latitude"
 CONF_LONGITUDE: Final[str] = "longitude"
 CONF_LOCATION: Final[str] = "location"
@@ -69,6 +70,7 @@ __all__ = [
     "CONF_LOCATION",
     "CONF_LONGITUDE",
     "CONF_PRESSURE_SENSOR",
+    "CONF_RAIN_DETECTION_SENSOR",
     "CONF_RAIN_SENSOR",
     "CONF_TEMPERATURE_SENSOR",
     "CONF_USE_SEA_LEVEL",

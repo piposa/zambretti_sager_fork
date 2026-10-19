@@ -10,7 +10,8 @@
           "wind_speed_sensor": "Windgeschwindigkeitssensor (optional)",
           "temperature_sensor": "Temperatursensor (optional)",
           "humidity_sensor": "Feuchtigkeitssensor (optional)",
-          "rain_sensor": "Regensensor (optional)",
+          "rain_detection_sensor": "Regenerkennungssensor (optional)",
+          "rain_sensor": "Niederschlagsmengensensor (optional)",
           "use_sea_level_correction": "Korrektur auf Meeresspiegeldruck aktivieren",
           "location": "Standort"
         },
@@ -20,6 +21,7 @@
           "wind_speed_sensor": "Optional: spezieller Windgeschwindigkeitssensor",
           "temperature_sensor": "Optional: wird für die Korrektur auf Meeresspiegeldruck verwendet",
           "humidity_sensor": "Optional: verbessert die Genauigkeit der Niederschlagswahrscheinlichkeit",
+          "rain_detection_sensor": "Optional: meldet aktuellen Regen als raining/none, on/off oder 0/1",
           "rain_sensor": "Optional: gemessene Niederschlagsmenge",
           "use_sea_level_correction": "Aktivieren Sie diese Option, wenn Sie einen Absolutdrucksensor über dem Meeresspiegel verwenden",
           "location": "Klicken Sie auf die Karte, um Ihren Standort für die Höhenberechnung festzulegen"
@@ -45,7 +47,8 @@
           "wind_speed_sensor": "Windgeschwindigkeitssensor (optional)",
           "temperature_sensor": "Temperatursensor (optional)",
           "humidity_sensor": "Feuchtigkeitssensor (optional)",
-          "rain_sensor": "Regensensor (optional)",
+          "rain_detection_sensor": "Regenerkennungssensor (optional)",
+          "rain_sensor": "Niederschlagsmengensensor (optional)",
           "use_sea_level_correction": "Korrektur auf Meeresspiegeldruck aktivieren",
           "location": "Standort"
         },
@@ -55,6 +58,7 @@
           "wind_speed_sensor": "Optional: spezieller Windgeschwindigkeitssensor",
           "temperature_sensor": "Optional: wird für die Korrektur auf Meeresspiegeldruck verwendet",
           "humidity_sensor": "Optional: verbessert die Genauigkeit der Niederschlagswahrscheinlichkeit",
+          "rain_detection_sensor": "Optional: meldet aktuellen Regen als raining/none, on/off oder 0/1",
           "rain_sensor": "Optional: gemessene Niederschlagsmenge",
           "use_sea_level_correction": "Aktivieren Sie diese Option, wenn Sie einen Absolutdrucksensor über dem Meeresspiegel verwenden",
           "location": "Klicken Sie auf die Karte, um Ihren Standort für die Höhenberechnung festzulegen"

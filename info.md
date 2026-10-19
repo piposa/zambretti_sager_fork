@@ -31,7 +31,7 @@ Extended forecasts for **6h, 12h, and 24h** ahead, plus a **precipitation probab
 
 1. Install via HACS
 2. Add the integration under **Settings → Devices & Services**
-3. Select your pressure sensor and any optional wind, temperature, humidity, and rain sensors
+3. Select your pressure sensor and any optional wind, temperature, humidity, rain-detection, and rain-amount sensors
 4. Click on the map to set your location
 5. Enable sea level correction if needed
 
@@ -42,7 +42,8 @@ Six sensors are created automatically and grouped under one device.
 - Barometric pressure sensor (hPa)
 - Wind direction sensor (degrees, optional but recommended for Sager)
 - Temperature sensor (optional, for altitude correction)
-- Rain sensor (optional, for measured precipitation)
+- Rain detection sensor (optional, supports raining/none, on/off, and 0/1)
+- Rain amount sensor (optional, for measured precipitation)
 
 ## Custom Lovelace Card
 
